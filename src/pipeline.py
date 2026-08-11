@@ -48,12 +48,14 @@ def run_pipeline(gene_list: list = None):
                 continue
 
             # Phase 3: Load
-            loader.load_data(clean_df)
+            loader.load_data(clean_df, "variants")
             successful_loads += 1
             logging.info(f"✅ Successfully loaded {gene_symbol} into DuckDB.")
 
         except Exception as e:
             logging.error(f"❌ Error processing {gene_symbol}: {e}")
+        
+        time.sleep(2)  # be polite to Ensembl's server, avoid rate-limit/500s
 
     elapsed_time = round(time.time() - start_time, 2)
     logging.info(f"\n🎉 Starter Pack Pipeline completed! Loaded {successful_loads}/{len(gene_list)} genes in {elapsed_time}s.")

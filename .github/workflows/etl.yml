@@ -10,6 +10,10 @@ on:
 jobs:
   run-etl:
     runs-on: ubuntu-latest # GitHub provides a fresh Ubuntu Linux server
+    
+    # CRITICAL: This permission is required for the bot to push code back to your repo
+    permissions:
+      contents: write 
 
     steps:
       - name: 📥 Checkout repository
@@ -41,3 +45,11 @@ jobs:
           name: genomic-database
           path: data/processed/genomic_data.duckdb
           retention-days: 7
+
+      # NEW: This commits the fresh database back to your main branch
+      # so your Streamlit Community Cloud app can actually use it.
+      - name: 🔄 Commit updated DuckDB database
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: daily refresh of genomic DuckDB cache"
+          file_pattern: "data/processed/*.duckdb"

@@ -49,7 +49,7 @@ if __name__ == "__main__":
     raw_data = extractor .fetch_variants_for_gene("HBB")
 
     # 2. Transform the data (Phase 2)
-    clean_df = transformer.clean_variants(raw_data)
+    clean_df = transformer.clean_variants(raw_data, "HBB")
 
     # 3. Print the first 5 rows of the cleaned DataFrame to verify
     print("\n--- Sample Cleaned Data (Top 5 Rows)---")

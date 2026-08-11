@@ -5,115 +5,241 @@ import plotly.express as px
 import sys
 import os
 
-# Add your project root to path so we can import your ETL modules directly
+# Add project root directory to path for ETL module access
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.extract import GenomicDataExtractor
 from src.transform import GenomicDataTransformer
 
-# 1. Page Configuration (must be first Streamlit command)
-st.set_page_config(page_title="Genomic Variant Intelligence Platform", layout="wide")
+# 1. Page Configuration & Custom CSS Injection
+st.set_page_config(page_title="Genomic Variant Intelligence Platform", layout="wide", page_icon="🧬")
 
-st.title("🧬 Genomic Variant Intelligence Platform")
-st.markdown("Type any gene symbol below. If it's not in the database, the platform will fetch and process it on-demand!")
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0e1117;
+    }
+    div[data-testid="metric-container"] {
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid #334155;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease-in-out;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-2px);
+        border-color: #38bdf8;
+    }
+    div[data-testid="metric-container"] > div:nth-child(2) {
+        color: #38bdf8 !important; 
+        font-weight: 700;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: transparent;
+        border-radius: 4px 4px 0px 0px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        color: #94a3b8;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #f8fafc;
+        border-bottom: 2px solid #38bdf8;
+    }
+    h1, h2, h3 {
+        color: #f8fafc;
+        font-weight: 600;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# 2. Database Connection & Table Setup
+st.title("🧬 Genomic Variant Intelligence")
+st.markdown("Explore annotated genetic mutations across multiple species genomes.")
+st.divider()
+
+# 2. Database Connection
 DB_PATH = "data/processed/genomic_data.duckdb"
 
-def get_connection():
+@st.cache_resource
+def get_db_connection():
     os.makedirs("data/processed", exist_ok=True)
-    return duckdb.connect(DB_PATH)
+    con = duckdb.connect(DB_PATH)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS variants (
+            gene_symbol VARCHAR,
+            variant_id VARCHAR,
+            chromosome VARCHAR,
+            start_position INTEGER,
+            end_position INTEGER,
+            consequence VARCHAR,
+            clinical_significance VARCHAR
+        )
+    """)
+    return con
 
-# Initialize table if it doesn't exist yet
-con = get_connection()
-con.execute("""
-    CREATE TABLE IF NOT EXISTS variants (
-        gene_symbol VARCHAR,
-        variant_id VARCHAR,
-        chromosome VARCHAR,
-        start_position INTEGER,
-        end_position INTEGER,
-        consequence VARCHAR,
-        clinical_significance VARCHAR
-    )
-""")
-con.close()
+con = get_db_connection()
 
-# 3. On-Demand Search Bar
-user_gene = st.text_input("🔍 Search or Fetch Gene Symbol:", "").strip().upper()
+try:
+    available_genes = con.execute("SELECT DISTINCT gene_symbol FROM variants").fetchdf()['gene_symbol'].tolist()
+    available_genes.sort()
+except Exception:
+    available_genes = []
 
-if user_gene:
-    con = get_connection()
-    # Check if this gene is already stored locally in our database
-    existing_check = con.execute("SELECT COUNT(*) FROM variants WHERE gene_symbol = ?", [user_gene]).fetchone()[0]
+# 3. Species Mapping Dictionary
+SPECIES_MAP = {
+    "Human (Homo sapiens)": "homo_sapiens",
+    "Chicken (Gallus gallus)": "gallus_gallus",
+    "Goat (Capra hircus)": "capra_hircus",
+    "Mouse (Mus musculus)": "mus_musculus",
+    "Avian Adenovirus": "avian_adenovirus"
+}
+
+# 4. The "Smart Dropdown" UI (Now with Species Selection)
+st.subheader("⚙️ Control Panel")
+
+# Create a side-by-side layout for a cleaner UI
+col_species, col_gene = st.columns(2)
+
+with col_species:
+    selected_species_label = st.selectbox("1. Select Target Species:", list(SPECIES_MAP.keys()))
+    target_species = SPECIES_MAP[selected_species_label]
+
+with col_gene:
+    options = ["-- Select a Gene --"] + available_genes + ["+ Fetch New Gene / Accession..."]
+    choice = st.selectbox("2. Choose a gene or fetch a new one:", options)
+
+active_gene = None
+
+if choice == "+ Fetch New Gene / Accession...":
+    fetch_input = st.text_input("Enter HGNC Symbol, Ensembl ID, or Accession (e.g., TP53, NM_000546):").strip().upper()
+    if fetch_input:
+        active_gene = fetch_input
+elif choice != "-- Select a Gene --":
+    active_gene = choice
+
+# 5. Pipeline Execution & Data Retrieval
+if active_gene:
+    record_count = con.execute("SELECT COUNT(*) FROM variants WHERE gene_symbol = ?", [active_gene]).fetchone()[0]
     
-    if existing_check == 0:
-        with st.spinner(f"Gene '{user_gene}' not found locally. Fetching live data from Ensembl API..."):
+    if record_count == 0:
+        with st.spinner(f"Querying Ensembl REST API for '{active_gene}' under {target_species}..."):
             try:
-                # 1. Extract using your actual extraction method and supporting species argument
                 extractor = GenomicDataExtractor()
-                
-                # Dynamic species handling for human vs viral genes
-                target_species = "avian_adenovirus" if user_gene.startswith("FADV") else "homo_sapiens"
-                
-                raw_data = extractor.fetch_variants_for_gene(user_gene, species=target_species)
+                # We now pass the user-selected species directly into the backend!
+                raw_data = extractor.fetch_variants_for_gene(active_gene, species=target_species)
                 
                 if raw_data:
-                    # 2. Transform
                     transformer = GenomicDataTransformer()
-                    clean_df = transformer.clean_variants(raw_data, user_gene)
+                    clean_df = transformer.clean_variants(raw_data, active_gene)
                     
-                    # 3. Load into DuckDB
-                    con.execute("INSERT INTO variants SELECT * FROM clean_df")
-                    st.success(f"Successfully fetched and loaded data for {user_gene}!")
+                    if not clean_df.empty:
+                        con.execute("INSERT INTO variants SELECT * FROM clean_df")
+                        st.success(f"Successfully processed and stored {len(clean_df)} variants for '{active_gene}'.")
+                        st.cache_resource.clear()
+                    else:
+                        st.warning(f"Extracted variant dataset was empty for '{active_gene}'.")
                 else:
-                    st.warning(f"No data returned from Ensembl for gene: {user_gene}")
+                    st.error(f"Ensembl API returned no variation records for '{active_gene}' in {target_species}.")
             except Exception as e:
-                st.error(f"Failed to fetch gene data: {e}")
-    con.close()
+                st.error(f"Pipeline error during live data ingestion: {e}")
 
-# 4. Load Data for Display
-@st.cache_data
-def load_db_data(trigger_refresh=0):
-    with duckdb.connect(DB_PATH) as con:
-        df = con.execute("SELECT * FROM variants").fetchdf()
-    return df
+    df_gene = con.execute("SELECT * FROM variants WHERE gene_symbol = ?", [active_gene]).fetchdf()
 
-df = load_db_data(user_gene if user_gene else 0)
+    # 6. Dashboard Metrics & Visualizations
+    if not df_gene.empty:
+        st.divider()
+        st.subheader(f"Genomic Profile: `{active_gene}`")
 
-# Filter dataframe based on user search input
-if user_gene and not df.empty and 'gene_symbol' in df.columns:
-    df_filtered = df[df['gene_symbol'] == user_gene]
-else:
-    df_filtered = df
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Total Variants Mapped", f"{len(df_gene):,}")
+        
+        chrom_val = df_gene['chromosome'].iloc[0] if 'chromosome' in df_gene.columns and not df_gene['chromosome'].empty else "N/A"
+        m2.metric("Chromosome", str(chrom_val))
+        
+        pathogenic_count = len(df_gene[df_gene['clinical_significance'].str.contains('pathogenic', na=False, case=False)]) if 'clinical_significance' in df_gene.columns else 0
+        m3.metric("Pathogenic Flags", f"{pathogenic_count:,}")
 
-# 5. UI Layout: Top Metrics & Visualizations
-if not df_filtered.empty:
-    current_gene_display = user_gene if user_gene else ", ".join(df['gene_symbol'].unique()) if 'gene_symbol' in df.columns else "All"
-    st.markdown(f"### Dataset Overview for: `{current_gene_display}`")
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Variants", len(df_filtered))
-    col2.metric("Unique Chromosomes", df_filtered['chromosome'].nunique() if 'chromosome' in df_filtered.columns else 0)
-    col3.metric("Pathogenic Variants", len(df_filtered[df_filtered['clinical_significance'].str.contains('pathogenic', na=False, case=False)]) if 'clinical_significance' in df_filtered.columns else 0)
+        tab1, tab2 = st.tabs(["📊 Analytics & Distribution", "📂 Raw Variant Explorer"])
 
-    # 6. Interactive Charts
-    st.markdown("### Variant Consequences Breakdown")
-    if 'consequence' in df_filtered.columns:
-        consequence_counts = df_filtered['consequence'].value_counts().reset_index()
-        consequence_counts.columns = ['Consequence Type', 'Count']
+        with tab1:
+            c1, c2 = st.columns(2)
 
-        fig = px.bar(
-            consequence_counts, 
-            x='Consequence Type', 
-            y='Count', 
-            color='Count',
-            color_continuous_scale='Viridis'
-        )
-        st.plotly_chart(fig, width='stretch')
+            with c1:
+                st.markdown("#### Variant Consequence Distribution")
+                if 'consequence' in df_gene.columns and not df_gene['consequence'].empty:
+                    consequence_counts = df_gene['consequence'].value_counts().reset_index()
+                    consequence_counts.columns = ['Consequence Type', 'Count']
+                    fig_bar = px.bar(
+                        consequence_counts,
+                        x='Count',
+                        y='Consequence Type',
+                        orientation='h',
+                        color='Count',
+                        color_continuous_scale='Tealgrn'
+                    )
+                    fig_bar.update_layout(
+                        margin=dict(l=0, r=0, t=20, b=0), 
+                        height=350,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)"
+                    )
+                    st.plotly_chart(fig_bar, width="stretch")
 
-    # 7. Raw Data Explorer
-    st.markdown("### Variant Explorer")
-    st.dataframe(df_filtered, height=400, width='stretch')
-else:
-    st.info("Enter a gene symbol above to begin exploring genetic variants.")
+            with c2:
+                st.markdown("#### Positional Mutation Mapping")
+                if 'start_position' in df_gene.columns and 'consequence' in df_gene.columns:
+                    fig_scatter = px.scatter(
+                        df_gene,
+                        x='start_position',
+                        y='consequence',
+                        color='consequence',
+                        hover_data=['variant_id'] if 'variant_id' in df_gene.columns else None
+                    )
+                    fig_scatter.update_layout(
+                        showlegend=False, 
+                        margin=dict(l=0, r=0, t=20, b=0), 
+                        height=350,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)"
+                    )
+                    st.plotly_chart(fig_scatter, width="stretch")
+            
+            st.divider()
+            st.markdown("#### Clinical Significance Breakdown")
+            if 'clinical_significance' in df_gene.columns:
+                # Safely handle missing values without triggering the Pandas regex bool error
+                clin_sig_data = df_gene['clinical_significance'].replace('', 'Unspecified').fillna('Unspecified')
+                clin_sig_counts = clin_sig_data.value_counts().reset_index()
+                clin_sig_counts.columns = ['Significance', 'Count']
+                
+                fig_donut = px.pie(
+                    clin_sig_counts, 
+                    values='Count', 
+                    names='Significance', 
+                    hole=0.5,
+                    color_discrete_sequence=px.colors.qualitative.Pastel
+                )
+                fig_donut.update_layout(
+                    margin=dict(l=0, r=0, t=20, b=0), 
+                    height=350,
+                    paper_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(fig_donut, width="stretch")
+
+        with tab2:
+            st.markdown(f"#### Complete Database Records for `{active_gene}`")
+            # Width stretch enforced
+            st.dataframe(df_gene, height=400, width="stretch")
+
+            csv_data = df_gene.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label=f"⬇️ Export `{active_gene}` Data (CSV)",
+                data=csv_data,
+                file_name=f"{active_gene}_variants.csv",
+                mime='text/csv'
+            )

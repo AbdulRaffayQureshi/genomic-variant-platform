@@ -1,6 +1,7 @@
 # DuckDB Database files
 data/processed/*.duckdb
 *.duckdb
+!data/processed/genomic_data.duckdb
 
 # Python virtual environment & cache
 __pycache__/
