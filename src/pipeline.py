@@ -9,7 +9,7 @@ from load import GenomicDataLoader
 # Setup our master logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_pipeline(gene_symbol: str = "HBB"):
+def run_pipeline(gene_symbol: str = "BRCA1"):
     """Executes the full Extract, Transform, Load sequence sequentially."""
     start_time = time.time()
     logging.info(f"🚀 Starting Genomic ETL Pipeline for gene: {gene_symbol}")
@@ -49,4 +49,4 @@ def run_pipeline(gene_symbol: str = "HBB"):
 
 if __name__ == "__main__":
     # You can easily change this target gene to track different diseases!
-    run_pipeline("HBB")
+    run_pipeline("BRCA1")
