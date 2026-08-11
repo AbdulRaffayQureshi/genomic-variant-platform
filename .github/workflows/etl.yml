@@ -28,9 +28,10 @@ jobs:
 
       - name: 🚀 Run ETL Pipeline
         run: |
+          mkdir -p data/processed
           source .venv/bin/activate
           python3 src/pipeline.py
-
+          
       # Cloud servers are ephemeral (they delete themselves when finished).
       # We upload the DuckDB database as an "artifact" so you can download the 
       # fresh data after the pipeline finishes.
