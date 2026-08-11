@@ -16,51 +16,123 @@ st.set_page_config(page_title="Genomic Variant Intelligence Platform", layout="w
 
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
     .stApp {
-        background-color: #0e1117;
+        background:
+            radial-gradient(circle at 15% 10%, rgba(34,211,238,0.10), transparent 40%),
+            radial-gradient(circle at 85% 0%, rgba(244,63,94,0.08), transparent 35%),
+            #05070a;
     }
-    div[data-testid="metric-container"] {
-        background: linear-gradient(145deg, #1e293b, #0f172a);
-        border: 1px solid #334155;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s ease-in-out;
+
+    /* Hero */
+    .hero-wrap {
+        padding: 28px 32px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(5,7,10,0.9));
+        border: 1px solid rgba(148,163,184,0.15);
+        box-shadow: 0 0 40px rgba(34,211,238,0.06);
+        margin-bottom: 6px;
     }
-    div[data-testid="metric-container"]:hover {
-        transform: translateY(-2px);
-        border-color: #38bdf8;
+    .hero-title {
+        font-size: 2.9rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        background: linear-gradient(90deg, #22d3ee, #67e8f9 40%, #f43f5e 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
     }
-    div[data-testid="metric-container"] > div:nth-child(2) {
-        color: #38bdf8 !important; 
+    .hero-subtitle {
+        color: #94a3b8;
+        font-size: 1.05rem;
+        margin-top: 6px;
+        margin-bottom: 14px;
+    }
+    .badge-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        color: #22d3ee;
+        background: rgba(34,211,238,0.08);
+        border: 1px solid rgba(34,211,238,0.3);
+        padding: 5px 12px;
+        border-radius: 999px;
+    }
+    .badge.red { color: #fb7185; background: rgba(244,63,94,0.08); border-color: rgba(244,63,94,0.3); }
+
+    /* Metric cards */
+    div[data-testid="stMetric"] {
+        background: linear-gradient(160deg, rgba(30,41,59,0.6), rgba(15,23,42,0.6));
+        border: 1px solid rgba(148,163,184,0.15);
+        border-radius: 14px;
+        padding: 18px 20px;
+        transition: all 0.25s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        border-color: rgba(34,211,238,0.5);
+        box-shadow: 0 0 24px rgba(34,211,238,0.15);
+        transform: translateY(-3px);
+    }
+    div[data-testid="stMetric"] label { color: #64748b !important; font-weight: 600; }
+    div[data-testid="stMetricValue"] {
+        color: #f8fafc !important;
+        font-family: 'JetBrains Mono', monospace;
         font-weight: 700;
     }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; border-bottom: 1px solid rgba(148,163,184,0.15); }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        background-color: transparent;
-        border-radius: 4px 4px 0px 0px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        color: #94a3b8;
+        height: 46px; background: transparent; color: #64748b; font-weight: 600;
     }
     .stTabs [aria-selected="true"] {
-        color: #f8fafc;
-        border-bottom: 2px solid #38bdf8;
+        color: #22d3ee !important;
+        border-bottom: 2px solid #22d3ee;
     }
-    h1, h2, h3 {
-        color: #f8fafc;
-        font-weight: 600;
+
+    h1, h2, h3, h4 { color: #f1f5f9; font-weight: 600; }
+
+    /* Selectbox / text input labels */
+    label { color: #cbd5e1 !important; font-weight: 600 !important; }
+
+    section[data-testid="stFileUploadDropzone"], div[data-baseweb="select"] > div {
+        background-color: rgba(15,23,42,0.7) !important;
+        border-color: rgba(148,163,184,0.25) !important;
+        border-radius: 10px !important;
     }
+
+    div[data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; border: 1px solid rgba(148,163,184,0.15); }
+
+    button[kind="secondary"], .stDownloadButton button {
+        background: linear-gradient(90deg, #0e7490, #22d3ee) !important;
+        color: #05070a !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-radius: 10px !important;
+        transition: box-shadow 0.2s ease;
+    }
+    .stDownloadButton button:hover { box-shadow: 0 0 20px rgba(34,211,238,0.4); }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🧬 Genomic Variant Intelligence")
-st.markdown("Explore annotated genetic mutations across multiple species genomes.")
-st.divider()
+st.markdown("""
+<div class="hero-wrap">
+    <div class="hero-title">🧬 Genomic Variant Intelligence</div>
+    <div class="hero-subtitle">Live ETL pipeline · Ensembl REST API → DuckDB → interactive analytics, across human, mouse, chicken &amp; goat genomes.</div>
+    <div class="badge-row">
+        <span class="badge">⚡ On-demand extraction</span>
+        <span class="badge">🧪 Multi-species support</span>
+        <span class="badge red">🚨 Clinical significance flags</span>
+        <span class="badge">🗄️ DuckDB-backed cache</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+st.write("")
 
 # 2. Database Connection
 DB_PATH = "data/processed/genomic_data.duckdb"
@@ -95,14 +167,12 @@ SPECIES_MAP = {
     "Human (Homo sapiens)": "homo_sapiens",
     "Chicken (Gallus gallus)": "gallus_gallus",
     "Goat (Capra hircus)": "capra_hircus",
-    "Mouse (Mus musculus)": "mus_musculus",
-    "Avian Adenovirus": "avian_adenovirus"
+    "Mouse (Mus musculus)": "mus_musculus"
 }
 
 # 4. The "Smart Dropdown" UI (Now with Species Selection)
 st.subheader("⚙️ Control Panel")
 
-# Create a side-by-side layout for a cleaner UI
 col_species, col_gene = st.columns(2)
 
 with col_species:
@@ -125,18 +195,17 @@ elif choice != "-- Select a Gene --":
 # 5. Pipeline Execution & Data Retrieval
 if active_gene:
     record_count = con.execute("SELECT COUNT(*) FROM variants WHERE gene_symbol = ?", [active_gene]).fetchone()[0]
-    
+
     if record_count == 0:
         with st.spinner(f"Querying Ensembl REST API for '{active_gene}' under {target_species}..."):
             try:
                 extractor = GenomicDataExtractor()
-                # We now pass the user-selected species directly into the backend!
                 raw_data = extractor.fetch_variants_for_gene(active_gene, species=target_species)
-                
+
                 if raw_data:
                     transformer = GenomicDataTransformer()
                     clean_df = transformer.clean_variants(raw_data, active_gene)
-                    
+
                     if not clean_df.empty:
                         con.execute("INSERT INTO variants SELECT * FROM clean_df")
                         st.success(f"Successfully processed and stored {len(clean_df)} variants for '{active_gene}'.")
@@ -144,7 +213,7 @@ if active_gene:
                     else:
                         st.warning(f"Extracted variant dataset was empty for '{active_gene}'.")
                 else:
-                    st.error(f"Ensembl API returned no variation records for '{active_gene}' in {target_species}.")
+                    st.error(f"Ensembl API returned no variation records for '{active_gene}' in {target_species}. Double check the gene exists under this species.")
             except Exception as e:
                 st.error(f"Pipeline error during live data ingestion: {e}")
 
@@ -157,10 +226,10 @@ if active_gene:
 
         m1, m2, m3 = st.columns(3)
         m1.metric("Total Variants Mapped", f"{len(df_gene):,}")
-        
+
         chrom_val = df_gene['chromosome'].iloc[0] if 'chromosome' in df_gene.columns and not df_gene['chromosome'].empty else "N/A"
         m2.metric("Chromosome", str(chrom_val))
-        
+
         pathogenic_count = len(df_gene[df_gene['clinical_significance'].str.contains('pathogenic', na=False, case=False)]) if 'clinical_significance' in df_gene.columns else 0
         m3.metric("Pathogenic Flags", f"{pathogenic_count:,}")
 
@@ -180,13 +249,14 @@ if active_gene:
                         y='Consequence Type',
                         orientation='h',
                         color='Count',
-                        color_continuous_scale='Tealgrn'
+                        color_continuous_scale=[[0, "#0e7490"], [0.5, "#22d3ee"], [1, "#f43f5e"]]
                     )
                     fig_bar.update_layout(
-                        margin=dict(l=0, r=0, t=20, b=0), 
+                        margin=dict(l=0, r=0, t=20, b=0),
                         height=350,
                         paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)"
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#cbd5e1"
                     )
                     st.plotly_chart(fig_bar, width="stretch")
 
@@ -198,42 +268,44 @@ if active_gene:
                         x='start_position',
                         y='consequence',
                         color='consequence',
-                        hover_data=['variant_id'] if 'variant_id' in df_gene.columns else None
+                        hover_data=['variant_id'] if 'variant_id' in df_gene.columns else None,
+                        color_discrete_sequence=px.colors.qualitative.Prism
                     )
                     fig_scatter.update_layout(
-                        showlegend=False, 
-                        margin=dict(l=0, r=0, t=20, b=0), 
+                        showlegend=False,
+                        margin=dict(l=0, r=0, t=20, b=0),
                         height=350,
                         paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)"
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#cbd5e1"
                     )
                     st.plotly_chart(fig_scatter, width="stretch")
-            
+
             st.divider()
             st.markdown("#### Clinical Significance Breakdown")
             if 'clinical_significance' in df_gene.columns:
-                # Safely handle missing values without triggering the Pandas regex bool error
                 clin_sig_data = df_gene['clinical_significance'].replace('', 'Unspecified').fillna('Unspecified')
                 clin_sig_counts = clin_sig_data.value_counts().reset_index()
                 clin_sig_counts.columns = ['Significance', 'Count']
-                
+
                 fig_donut = px.pie(
-                    clin_sig_counts, 
-                    values='Count', 
-                    names='Significance', 
-                    hole=0.5,
-                    color_discrete_sequence=px.colors.qualitative.Pastel
+                    clin_sig_counts,
+                    values='Count',
+                    names='Significance',
+                    hole=0.6,
+                    color_discrete_sequence=["#22d3ee", "#f43f5e", "#67e8f9", "#fb7185", "#0e7490", "#94a3b8"]
                 )
                 fig_donut.update_layout(
-                    margin=dict(l=0, r=0, t=20, b=0), 
+                    margin=dict(l=0, r=0, t=20, b=0),
                     height=350,
-                    paper_bgcolor="rgba(0,0,0,0)"
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font_color="#cbd5e1",
+                    legend=dict(font=dict(color="#cbd5e1"))
                 )
                 st.plotly_chart(fig_donut, width="stretch")
 
         with tab2:
             st.markdown(f"#### Complete Database Records for `{active_gene}`")
-            # Width stretch enforced
             st.dataframe(df_gene, height=400, width="stretch")
 
             csv_data = df_gene.to_csv(index=False).encode('utf-8')
@@ -243,3 +315,5 @@ if active_gene:
                 file_name=f"{active_gene}_variants.csv",
                 mime='text/csv'
             )
+else:
+    st.info("💡 Select a species and gene above to begin exploring, or fetch a new one from Ensembl.")
