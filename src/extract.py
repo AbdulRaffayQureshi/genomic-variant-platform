@@ -11,7 +11,10 @@ class GenomicDataExtractor:
 
     def __init__(self):
         self.base_url = "https://rest.ensembl.org"
-        self.headers = {"Content-Type": "application/json"}
+        self.headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Abdul_Raffay_Genomic_Pipeline/1.0"
+        }
 
     def fetch_variants_for_gene(self, gene_name: str) -> List[Dict]:
         """

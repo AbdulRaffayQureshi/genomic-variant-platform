@@ -1,5 +1,6 @@
 import logging
 import time
+import sys
 
 # We import the three classes you built in Phases 1, 2, and 3
 from extract import GenomicDataExtractor
@@ -23,7 +24,7 @@ def run_pipeline(gene_symbol: str = "BRCA1"):
         # Safety check: if extraction fails, stops the pipeline so we don't load garbage data
         if not raw_data:
             logging.error("Pipeline stopped: No raw data extracted.")
-            return
+            sys.exit(1)
 
         # Phase 2: Transform
         logging.info(">>> Phase 2: TRANSFORM")
@@ -33,8 +34,8 @@ def run_pipeline(gene_symbol: str = "BRCA1"):
         # Safety check: ensure the dataframe actually has rows
         if clean_df.empty:
             logging.error("Pipeline stopped: Transformed dataset is empty.")
-            return
-        
+            sys.exit(1)
+
         # Phase 3: Load
         logging.info(">>> Phase 3: LOAD")
         loader = GenomicDataLoader()
@@ -46,6 +47,7 @@ def run_pipeline(gene_symbol: str = "BRCA1"):
     except Exception as e:
         # If any module crashes, the orchestrator catches the error gracefully
         logging.error(f"❌ Pipeline failed with error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     # You can easily change this target gene to track different diseases!
