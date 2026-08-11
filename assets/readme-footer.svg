@@ -1,0 +1,33 @@
+<svg width="1200" height="140" viewBox="0 0 1200 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="footBg" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="140" fill="url(#footBg)"/>
+
+  <!-- circuit-style connector line, distinct from header's helix -->
+  <path d="M0,70 L120,70 L150,40 L260,40 L290,70 L520,70 L550,100 L680,100 L710,70 L940,70 L970,40 L1080,40 L1110,70 L1200,70"
+        stroke="url(#lineGrad)" stroke-width="2" fill="none" opacity="0.8"/>
+  <g fill="#22d3ee">
+    <circle cx="150" cy="40" r="3.5"/>
+    <circle cx="290" cy="70" r="3.5"/>
+    <circle cx="710" cy="70" r="3.5"/>
+    <circle cx="970" cy="40" r="3.5"/>
+  </g>
+  <g fill="#f43f5e">
+    <circle cx="550" cy="100" r="3.5"/>
+    <circle cx="1110" cy="70" r="3.5"/>
+  </g>
+
+  <text x="600" y="118" text-anchor="middle" font-family="'Courier New', monospace" font-size="14" fill="#64748b">
+    Built with Python · DuckDB · Streamlit · Plotly · Ensembl REST API — engineered on WSL2 + Zsh
+  </text>
+</svg>
