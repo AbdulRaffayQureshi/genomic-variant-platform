@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class GenomicDataTransformer:
     """Handles the cleaning and structuring of raw genomic JSON data."""
 
-    def clean_variants(self, raw_variants: List[Dict]) -> pd.DataFrame:
+    def clean_variants(self, raw_variants: List[Dict], gene_symbol: str) -> pd.DataFrame:
         """
         Takes raw JSON data from Ensembl and flattens it into a Pandas DataFrame.
         """
@@ -20,6 +20,7 @@ class GenomicDataTransformer:
             # We only extract the exact data points we need for our database
             # Using .get() prevents the script from crashing if a field is missing
             clean_row = {
+                "gene_symbol": gene_symbol,
                 "variant_id": variant.get("id"),
                 "chromosome": variant.get("seq_region_name"),
                 "start_position": variant.get("start"),

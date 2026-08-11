@@ -16,15 +16,15 @@ class GenomicDataExtractor:
             "User-Agent": "Abdul_Raffay_Genomic_Pipeline/1.0"
         }
 
-    def fetch_variants_for_gene(self, gene_name: str) -> List[Dict]:
+    def fetch_variants_for_gene(self, gene_name: str, species: str = "homo_sapiens") -> List[Dict]:
         """
-        Step 1: Convert a human-readable gene name (like 'BRCA1') into an Ensembl ID.
-        Step 2: Fetch known variants (mutations) for that gene.
+        Step 1: Convert a gene name into an Ensembl ID using a dynamic species endpoint.
+        Step 2: Fetch known variants for that gene.
         """
-        logging.info(f"Looking up Ensembl ID for gene: {gene_name}")
+        logging.info(f"Looking up Ensembl ID for gene: {gene_name} under species: {species}")
 
-        # Step 1: Look up the Gene ID ---
-        lookup_url = f"{self.base_url}/lookup/symbol/homo_sapiens/{gene_name}?expand=1"
+        # Step 1: Look up the Gene ID with dynamic species support ---
+        lookup_url = f"{self.base_url}/lookup/symbol/{species}/{gene_name}?expand=1"
         response = requests.get(lookup_url, headers=self.headers)
 
         if response.status_code != 200:

@@ -1,4 +1,9 @@
-.venv/
-__pycache__/
+# DuckDB Database files
+data/processed/*.duckdb
 *.duckdb
-.agents/
+
+# Python virtual environment & cache
+__pycache__/
+*.pyc
+.venv/
+env/

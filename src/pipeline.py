@@ -1,54 +1,62 @@
 import logging
 import time
 import sys
+import os
 
-# We import the three classes you built in Phases 1, 2, and 3
-from extract import GenomicDataExtractor
-from transform import GenomicDataTransformer
-from load import GenomicDataLoader
+# Ensure project root is accessible for module imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Setup our master logging
+from src.extract import GenomicDataExtractor
+from src.transform import GenomicDataTransformer
+from src.load import GenomicDataLoader
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def run_pipeline(gene_symbol: str = "BRCA1"):
-    """Executes the full Extract, Transform, Load sequence sequentially."""
+# Default starter pack of critical human genes
+STARTER_GENES = ["BRCA1", "TP53", "EGFR", "CFTR", "HBB"]
+
+def run_pipeline(gene_list: list = None):
+    """Executes the ETL sequence across a starter pack of genes."""
+    if gene_list is None:
+        gene_list = STARTER_GENES
+
     start_time = time.time()
-    logging.info(f"🚀 Starting Genomic ETL Pipeline for gene: {gene_symbol}")
+    logging.info(f"🚀 Starting Automated Pipeline for {len(gene_list)} starter genes: {gene_list}")
 
-    try:
-        # Phase 1: Extract
-        logging.info(">>> Phase 1: EXTRACT")
-        extractor = GenomicDataExtractor()
-        raw_data = extractor.fetch_variants_for_gene(gene_symbol)
+    extractor = GenomicDataExtractor()
+    transformer = GenomicDataTransformer()
+    loader = GenomicDataLoader()
 
-        # Safety check: if extraction fails, stops the pipeline so we don't load garbage data
-        if not raw_data:
-            logging.error("Pipeline stopped: No raw data extracted.")
-            sys.exit(1)
+    successful_loads = 0
 
-        # Phase 2: Transform
-        logging.info(">>> Phase 2: TRANSFORM")
-        transformer = GenomicDataTransformer()
-        clean_df = transformer.clean_variants(raw_data)
+    for gene_symbol in gene_list:
+        logging.info(f"\n--- Processing Gene: {gene_symbol} ---")
+        try:
+            # Determine species context (handling viral vs human gene lookups)
+            target_species = "avian_adenovirus" if gene_symbol.startswith("FADV") else "homo_sapiens"
 
-        # Safety check: ensure the dataframe actually has rows
-        if clean_df.empty:
-            logging.error("Pipeline stopped: Transformed dataset is empty.")
-            sys.exit(1)
+            # Phase 1: Extract
+            raw_data = extractor.fetch_variants_for_gene(gene_symbol, species=target_species)
+            if not raw_data:
+                logging.warning(f"Skipping {gene_symbol}: No raw data retrieved.")
+                continue
 
-        # Phase 3: Load
-        logging.info(">>> Phase 3: LOAD")
-        loader = GenomicDataLoader()
-        loader.load_data(clean_df)
-        
-        elapsed_time = round(time.time() - start_time, 2)
-        logging.info(f"✅ Pipeline completed successfully in {elapsed_time} seconds!")
-        
-    except Exception as e:
-        # If any module crashes, the orchestrator catches the error gracefully
-        logging.error(f"❌ Pipeline failed with error: {e}")
-        sys.exit(1)
+            # Phase 2: Transform
+            clean_df = transformer.clean_variants(raw_data, gene_symbol)
+            if clean_df.empty:
+                logging.warning(f"Skipping {gene_symbol}: Transformed dataset is empty.")
+                continue
+
+            # Phase 3: Load
+            loader.load_data(clean_df)
+            successful_loads += 1
+            logging.info(f"✅ Successfully loaded {gene_symbol} into DuckDB.")
+
+        except Exception as e:
+            logging.error(f"❌ Error processing {gene_symbol}: {e}")
+
+    elapsed_time = round(time.time() - start_time, 2)
+    logging.info(f"\n🎉 Starter Pack Pipeline completed! Loaded {successful_loads}/{len(gene_list)} genes in {elapsed_time}s.")
 
 if __name__ == "__main__":
-    # You can easily change this target gene to track different diseases!
-    run_pipeline("BRCA1")
+    run_pipeline()
